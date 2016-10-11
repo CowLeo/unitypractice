@@ -20,6 +20,14 @@ namespace Complete
         private float m_TurnInputValue;             // The current value of the turn input.
         private float m_OriginalPitch;              // The pitch of the audio source at the start of the scene.
 
+        private string m_JumpButton;
+
+        public float rotationSpeed = 5;
+        public float jumpSpeed = 500;
+        private Vector3 inputVec;
+        private Quaternion rotate;
+        private Vector3 angle;
+        private bool isTop = false;
 
         private void Awake()
         {
@@ -51,8 +59,14 @@ namespace Complete
             m_MovementAxisName = "Vertical" + m_PlayerNumber;
             m_TurnAxisName = "Horizontal" + m_PlayerNumber;
 
+            m_JumpButton = "Fire" + m_PlayerNumber;
+
             // Store the original pitch of the audio source.
             m_OriginalPitch = m_MovementAudio.pitch;
+            // rotate = new Quaternion(0,0.38f,0,0.92f);
+            rotate = m_Rigidbody.rotation;
+            angle = new Vector3(0, 0, 0);
+            inputVec = new Vector3(0, 0, 0);
         }
 
 
@@ -62,8 +76,26 @@ namespace Complete
             m_MovementInputValue = Input.GetAxis(m_MovementAxisName);
             m_TurnInputValue = Input.GetAxis(m_TurnAxisName);
 
-            if (m_PlayerNumber == 1)
-                Debug.Log("输出" + m_PlayerNumber + " :" + m_TurnInputValue);
+            inputVec.Set(-m_MovementInputValue, 0, m_TurnInputValue);
+
+
+            if (Input.GetButtonDown(m_JumpButton))
+            {
+                if (m_PlayerNumber == 1)
+                    Debug.Log("输出" + m_PlayerNumber + " :" + m_TurnInputValue);
+                Jump();
+                isTop = true;
+            }
+            else 
+            {
+                if (m_Rigidbody.velocity.y <= 4 && isTop)
+                {
+                    isTop = false;
+                    m_Rigidbody.velocity = Vector3.down * (jumpSpeed/70);
+                    Debug.Log("okkkkkkk");
+                }
+
+            }
 
             EngineAudio();
         }
@@ -100,7 +132,9 @@ namespace Complete
         private void FixedUpdate()
         {
             // float angle = Vector3.Angle(new Vector3(m_MovementInputValue,0f,0f),new Vector3(0f,0f,m_TurnInputValue));
-            Vector3 angle = new Vector3(m_MovementInputValue,0f,0f) + new Vector3(0f,0f,-m_TurnInputValue);
+            // Vector3 angle = new Vector3(m_MovementInputValue, 0f, 0f) + new Vector3(0f, 0f, -m_TurnInputValue);
+            // Vector3 angle = new Vector3(m_MovementInputValue, 0f, -m_TurnInputValue);
+            angle.Set(m_MovementInputValue, 0f, -m_TurnInputValue);
             angle = Vector3.Normalize(angle);
             // Adjust the rigidbodies position and orientation in FixedUpdate.
             Move(angle);
@@ -122,13 +156,33 @@ namespace Complete
 
         private void Turn(Vector3 angle)
         {
+            if (inputVec != Vector3.zero)
+            {
+                Quaternion quate = rotate * Quaternion.LookRotation(inputVec);
+                // m_Rigidbody.transform.rotation = Quaternion.Slerp(m_Rigidbody.transform.rotation, quate, Time.deltaTime * rotationSpeed);
+                m_Rigidbody.MoveRotation(Quaternion.Slerp(m_Rigidbody.transform.rotation, quate, Time.deltaTime * rotationSpeed));
+            }
             // Determine the number of degrees to be turned based on the input, speed and time between frames.
-            float turn = m_TurnInputValue * m_TurnSpeed * Time.deltaTime;
+            // float turn = m_TurnInputValue * m_TurnSpeed * Time.deltaTime;
             // Make this into a rotation in the y axis.
-            Quaternion turnRotation = Quaternion.Euler(0f, turn, 0f);
+            // Quaternion turnRotation = Quaternion.Euler(0f, turn, 0f);
 
             // Apply this rotation to the rigidbody's rotation.
-            m_Rigidbody.MoveRotation(m_Rigidbody.rotation * turnRotation);
+            // m_Rigidbody.MoveRotation(m_Rigidbody.rotation * turnRotation);
+
+            // m_Rigidbody.MoveRotation(m_Rigidbody.rotation * turnRotation);
+            // m_Rigidbody.rotation = Quaternion.FromToRotation(Quaternion.ToEulerAngles(m_Rigidbody.rotation),angle);
+            // m_Rigidbody.MoveRotation(Quaternion.Slerp(m_Rigidbody.rotation,Quaternion.Euler(angle),Time.deltaTime));
+        }
+
+        private void Jump()
+        {
+            m_Rigidbody.velocity = Vector3.up * 0;
+            Debug.Log("" + m_Rigidbody.velocity);
+            
+            m_Rigidbody.AddForce(Vector3.up * jumpSpeed);
         }
     }
+
+
 }
