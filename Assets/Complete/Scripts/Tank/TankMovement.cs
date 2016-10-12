@@ -5,7 +5,7 @@ namespace Complete
     public class TankMovement : MonoBehaviour
     {
         public int m_PlayerNumber = 1;              // Used to identify which tank belongs to which player.  This is set by this tank's manager.
-        public float m_Speed = 12f;                 // How fast the tank moves forward and back.
+        public float m_Speed = 2f;                 // How fast the tank moves forward and back.
         public float m_TurnSpeed = 180f;            // How fast the tank turns in degrees per second.
         public AudioSource m_MovementAudio;         // Reference to the audio source used to play engine sounds. NB: different to the shooting audio source.
         public AudioClip m_EngineIdling;            // Audio to play when the tank isn't moving.
@@ -20,6 +20,8 @@ namespace Complete
         private float m_TurnInputValue;             // The current value of the turn input.
         private float m_OriginalPitch;              // The pitch of the audio source at the start of the scene.
 
+        private float m_vertical;
+        private float m_horizontal;
         private string m_JumpButton;
 
         public float rotationSpeed = 5;
@@ -27,7 +29,19 @@ namespace Complete
         private Vector3 inputVec;
         private Quaternion rotate;
         private Vector3 angle;
+        private Vector3 target;
         private bool isTop = false;
+        private bool moveStart = false;
+        private Vector3 moveForward;
+
+        private float x;
+        private float z;
+        private float dx;
+        private float dz;
+
+        private float dampSpeed = 4;
+
+        private float gravity = 25;
 
         private void Awake()
         {
@@ -86,16 +100,51 @@ namespace Complete
                 Jump();
                 isTop = true;
             }
-            else 
+            else
             {
-                if (m_Rigidbody.velocity.y <= 4 && isTop)
+                if (m_Rigidbody.velocity.y <= 1 && isTop)
                 {
                     isTop = false;
-                    m_Rigidbody.velocity = Vector3.down * (jumpSpeed/70);
+                    // m_Rigidbody.velocity = Vector3.down * (jumpSpeed / 100);
                     Debug.Log("okkkkkkk");
                 }
 
             }
+
+            m_vertical = Input.GetAxisRaw(m_MovementAxisName);
+            m_horizontal = Input.GetAxisRaw(m_TurnAxisName);
+            if (!moveStart && (Input.GetButton(m_MovementAxisName) || Input.GetButton(m_TurnAxisName)))
+            {
+                Debug.Log("moveStart :" + moveStart);
+                moveStart = true;
+                target = new Vector3(m_Rigidbody.transform.localPosition.x + m_vertical, m_Rigidbody.transform.localPosition.y, m_Rigidbody.transform.localPosition.z - m_horizontal);
+            }
+
+            if (m_vertical != 0)
+            {
+                if (dx * m_vertical < 0)
+                    x = 0f;
+                z = 0f;
+                dx = m_vertical * dampSpeed * Time.deltaTime;
+                dz = 0f;
+
+            }
+
+            if (m_horizontal != 0)
+            {
+                x = 0f;
+                if (dz * m_horizontal > 0)
+                    z = 0f;
+                dx = 0f;
+                dz = -m_horizontal * dampSpeed * Time.deltaTime;
+            }
+            if (m_vertical != 0 && m_horizontal != 0)
+            {
+                dx = 0f;
+                dz = 0f;
+            }
+
+
 
             EngineAudio();
         }
@@ -131,13 +180,38 @@ namespace Complete
 
         private void FixedUpdate()
         {
+            //增加重力方法中的一种
+            m_Rigidbody.AddForce(Vector3.down * gravity);
+
             // float angle = Vector3.Angle(new Vector3(m_MovementInputValue,0f,0f),new Vector3(0f,0f,m_TurnInputValue));
             // Vector3 angle = new Vector3(m_MovementInputValue, 0f, 0f) + new Vector3(0f, 0f, -m_TurnInputValue);
             // Vector3 angle = new Vector3(m_MovementInputValue, 0f, -m_TurnInputValue);
             angle.Set(m_MovementInputValue, 0f, -m_TurnInputValue);
             angle = Vector3.Normalize(angle);
+
+            if (Mathf.Abs(x) < 1)
+            {
+                x += dx;
+            }
+            else
+            {
+                x = x / Mathf.Abs(x);
+            }
+            if (Mathf.Abs(z) < 1)
+            {
+                z += dz;
+            }
+            else
+            {
+                z = z / Mathf.Abs(z);
+            }
+            
+            // Debug.Log("dz: " + dz);
+            moveForward.Set(x, 0f, z);
             // Adjust the rigidbodies position and orientation in FixedUpdate.
-            Move(angle);
+            // MoveBlock(target);
+
+            Move(moveForward);
             Turn(angle);
         }
 
@@ -151,6 +225,22 @@ namespace Complete
 
             // Apply this movement to the rigidbody's position.
             m_Rigidbody.MovePosition(m_Rigidbody.position + movement);
+
+            // m_Rigidbody.transform.localPosition = Vector3.MoveTowards(m_Rigidbody.transform.localPosition,new Vector3(),m_Speed * Time.deltaTime);
+        }
+
+        private void MoveBlock(Vector3 angle)
+        {
+
+            m_Rigidbody.transform.localPosition = Vector3.MoveTowards(m_Rigidbody.transform.localPosition, angle, m_Speed * Time.deltaTime);
+
+            Debug.Log(m_Speed * Time.deltaTime);
+            if (Vector3.Distance(target, m_Rigidbody.transform.localPosition) <= m_Speed)
+            {
+                moveStart = false;
+            }
+
+
         }
 
 
@@ -179,7 +269,7 @@ namespace Complete
         {
             m_Rigidbody.velocity = Vector3.up * 0;
             Debug.Log("" + m_Rigidbody.velocity);
-            
+
             m_Rigidbody.AddForce(Vector3.up * jumpSpeed);
         }
     }
