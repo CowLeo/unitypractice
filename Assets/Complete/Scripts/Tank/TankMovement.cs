@@ -205,7 +205,7 @@ namespace Complete
             {
                 z = z / Mathf.Abs(z);
             }
-            
+
             // Debug.Log("dz: " + dz);
             moveForward.Set(x, 0f, z);
             // Adjust the rigidbodies position and orientation in FixedUpdate.
@@ -271,6 +271,21 @@ namespace Complete
             Debug.Log("" + m_Rigidbody.velocity);
 
             m_Rigidbody.AddForce(Vector3.up * jumpSpeed);
+        }
+
+        void OnCollisionEnter(Collision collision)
+        {
+            // Debug.Log(collision.gameObject.GetComponentInParent<CompleteLevelArt>());
+            Debug.Log(collision.gameObject.GetComponentInParent(typeof(HingeJoint)));
+            if (collision.gameObject.tag != "LandGround")
+            {
+                Debug.Log("出发");
+                x = 0;
+                z = 0;
+                dx = 0f;
+                dz = 0f;
+            }
+
         }
     }
 
