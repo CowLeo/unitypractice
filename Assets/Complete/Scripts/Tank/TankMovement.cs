@@ -180,6 +180,8 @@ namespace Complete
 
         private void FixedUpdate()
         {
+            if (m_PlayerNumber != 1)
+                    return;
             //增加重力方法中的一种
             m_Rigidbody.AddForce(Vector3.down * gravity);
 
@@ -206,8 +208,8 @@ namespace Complete
                 z = z / Mathf.Abs(z);
             }
 
-            // Debug.Log("dz: " + dz);
-            moveForward.Set(x, 0f, z);
+            Debug.Log("x: " + x);
+            moveForward.Set(x, 0, z);
             // Adjust the rigidbodies position and orientation in FixedUpdate.
             // MoveBlock(target);
 
@@ -225,6 +227,10 @@ namespace Complete
 
             // Apply this movement to the rigidbody's position.
             m_Rigidbody.MovePosition(m_Rigidbody.position + movement);
+            // Debug.Log("速度"+angle);
+            // Vector3 movement2 = angle * m_Speed;
+            // m_Rigidbody.velocity = angle; 
+            
 
             // m_Rigidbody.transform.localPosition = Vector3.MoveTowards(m_Rigidbody.transform.localPosition,new Vector3(),m_Speed * Time.deltaTime);
         }
@@ -273,20 +279,90 @@ namespace Complete
             m_Rigidbody.AddForce(Vector3.up * jumpSpeed);
         }
 
+        void OnCollisionStay(Collision collision)
+        {
+            // Debug.Log("还在里面"+x+" z:"+z+" dx:"+dx+" dz:"+dz);
+            // foreach (ContactPoint contact in collision.contacts)
+            // {
+            //     // print(contact.thisCollider.name + " hit " + contact.otherCollider.name);
+            //     Debug.DrawRay(contact.point, contact.normal, Color.white);
+            // }
+            var parent = collision.gameObject.transform.parent;
+            if (parent != null)
+            {
+                var pro = parent.gameObject.GetComponent<Property>();
+                if (pro != null)
+                {
+                    var gb = pro.gameObject;
+                    if (gb.tag != "LandGround")
+                    {
+                        ContactPoint contactPoint = collision.contacts[0];
+                      
+                        Debug.Log("出发");
+                        //法线方向 朝上时 不进行速度重置
+                        if (contactPoint.normal.y == 0)
+                        {
+                            x = 0;
+                            z = 0;
+                            dx = 0f;
+                            dz = 0f;
+                        }
+
+                    }
+                }
+            }
+        }
+        private Vector3 m_preVelocity = Vector3.zero;//上一帧速度
         void OnCollisionEnter(Collision collision)
         {
+          
+            // foreach(var contacts in collision.contacts){
+            //     Debug.DrawRay(contacts.point,contacts.normal,Color.green);
+            // }
             // Debug.Log(collision.gameObject.GetComponentInParent<CompleteLevelArt>());
-            Debug.Log(collision.gameObject.GetComponentInParent(typeof(HingeJoint)));
-            if (collision.gameObject.tag != "LandGround")
+            // Debug.Log();
+            // Debug.Log(collision.gameObject.transform.parent.gameObject.GetComponent<Property>());
+            var parent = collision.gameObject.transform.parent;
+            if (parent != null)
             {
-                Debug.Log("出发");
-                x = 0;
-                z = 0;
-                dx = 0f;
-                dz = 0f;
+                var pro = parent.gameObject.GetComponent<Property>();
+                if (pro != null)
+                {
+                    var gb = pro.gameObject;
+                    if (gb.tag != "LandGround")
+                    {
+                        ContactPoint contactPoint = collision.contacts[0];
+                        // Vector3 newDir = Vector3.zero;
+                        // Vector3 curDir = m_Rigidbody.transform.TransformDirection(Vector3.forward);
+                        // Debug.Log("碰撞点:"+contactPoint);
+                        // Debug.Log("法线："+contactPoint.normal);
+                        // newDir = Vector3.Reflect(curDir, contactPoint.normal);
+                        // Quaternion rotation = Quaternion.FromToRotation(Vector3.forward, newDir);
+                        // m_Rigidbody.transform.rotation = rotation;
+                        // m_Rigidbody.velocity = newDir.normalized * (m_preVelocity.x  / m_preVelocity.normalized.x);
+                        //判断碰撞的方位
+                        // if(collision.collider.collsionFlags)
+                        Debug.Log("出发");
+                        //法线方向 朝上时 不进行速度重置
+                        if (contactPoint.normal.y == 0)
+                        {
+                            x = 0;
+                            z = 0;
+                            dx = 0f;
+                            dz = 0f;
+                        }
+
+                    }
+                }
             }
+            // GameObject obj = collision.gameObject.transform.parent.gameObject.GetComponent<Property>().gameObject;
+            // if (collision.gameObject.transform.parent.gameObject.tag != "LandGround")
+            // {
+
+            // }
 
         }
+
     }
 
 
